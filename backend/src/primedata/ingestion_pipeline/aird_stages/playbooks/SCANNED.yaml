@@ -1,0 +1,118 @@
+id: SCANNED
+description: Scanned/OCR'd docs with hard line breaks, pipes, headers/footers & weak punctuation
+
+probes:
+  must_match:
+    # Lines with stray pipes / blocky OCR text
+    - (?mi)^(?:\|\s*)?[A-Z0-9][A-Z0-9 \-\|]{8,}$
+  nice_to_have:
+    - (?mi)^\s*=== PAGE \d+ ===\s*$
+    - (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    - (?m)\|\s*[A-Za-z0-9]
+  must_match_flags: MULTILINE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  # --- OCR HYGIENE ---
+  # Soft hyphen
+  - pattern: \u00AD
+    replace: ''
+  # Fix hyphenation across line breaks: "exam-\nple" -> "example"
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: \1\2
+  # Join lowercase-leading line (continuation line) to previous line
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  # Remove hard pipes at start and normalize inline pipes to spaces
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  - pattern: \s*\|\s*
+    replace: ' '
+  # Collapse multiple spaces/tabs
+  - pattern: '[ \t]{2,}'
+    replace: ' '
+  # Remove watermark / site stamps (expand as needed)
+  - pattern: (?mi)^\s*(?:This label may not be the latest approved by FDA\.|OceanofPDF\.com.*)$
+    replace: ''
+  # Remove page headers/footers with classic "Page X of Y"
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  # Remove repeated ALL-CAPS header lines that are only number/section labels
+  - pattern: (?mi)^(?:[IVXLCM]+\.|\d+(?:\.\d+)*)(?:\s*[A-Z][A-Z0-9 &'\-/,:()]{0,})?\s*$
+    replace: ''
+  # Normalize smart quotes and dashes
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  # Remove stray single-letter lines
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  # Merge lines that end without sentence punctuation into previous line (reduces mid-sentence cuts)
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    flags: MULTILINE
+  - pattern: ^(?:\f|\x0c)$
+    flags: MULTILINE
+
+headers:
+  # Numeric/outline styles (e.g., 1., 1.1, 2.3.4 Title)
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  # ROMAN or ALL-CAPS headings (min length prevents false positives)
+  - pattern: (?m)^(?:[IVXLCM]+\.?\s+)?[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  # Title Case (1–7 tokens), avoids sentence lines
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  # Bullet/asterisk headings
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  HIGHLIGHTS OF PRESCRIBING INFORMATION: highlights
+  FULL PRESCRIBING INFORMATION: full_pi
+  INDICATIONS AND USAGE: indications
+  DOSAGE AND ADMINISTRATION: dosage
+  CONTRAINDICATIONS: contraindications
+  WARNINGS AND PRECAUTIONS: warnings
+  ADVERSE REACTIONS: adverse_reactions
+  DRUG INTERACTIONS: interactions
+  USE IN SPECIFIC POPULATIONS: use_in_populations
+  BOXED WARNING: boxed_warning
+  CLINICAL PHARMACOLOGY: clinical_pharmacology
+  HOW SUPPLIED/STORAGE AND HANDLING: supply_storage
+  PATIENT COUNSELING INFORMATION: patient_counseling
+  MEDICATION GUIDE: medication_guide
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(patient counseling|medication guide|patient information)\b
+    audience: patient
+  - pattern: (?i)\b(clinical|pharmacology|contraindications|warnings|dosage|adverse reactions|indications|interactions)\b
+    audience: hcp
+
+chunking:
+  # Use sentence-first to reduce mid-sentence boundaries; fallback inside code handles long sentences as chars.
+  strategy: sentence
+  max_tokens: 900
+  overlap_sentences: 2
+  hard_overlap_chars: 300
+
+quality_gates:
+  min_sections: 1
+  # After improved normalization & sentence chunking, we expect < 0.4 easily; keep conservative.
+  max_mid_sentence_boundary_rate: 0.6
+
+
+
+

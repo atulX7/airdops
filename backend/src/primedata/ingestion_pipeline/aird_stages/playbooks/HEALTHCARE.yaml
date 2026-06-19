@@ -1,0 +1,119 @@
+id: HEALTHCARE
+description: Medical records, clinical notes, patient data with HIPAA compliance
+
+probes:
+  must_match:
+    - '(?i)\b(patient|clinical|medical|diagnosis|treatment|medication|vital signs|lab results|chief complaint|hpi|assessment|plan|soap note)\b'
+  nice_to_have:
+    - '(?i)\b(hipaa|phi|icd-10|cpt|ehr|emr|clinical note|progress note|discharge summary|admission note)\b'
+    - '(?i)\b(chief complaint|history of present illness|review of systems|physical examination|assessment and plan)\b'
+  must_match_flags: IGNORECASE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  # Soft hyphen
+  - pattern: \u00AD
+    replace: ''
+  # Fix hyphenation across line breaks: "exam-\nple" -> "example"
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: \1\2
+  # Join lowercase-leading continuation lines
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  # Remove leading pipes and normalize inline pipes
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  - pattern: \s*\|\s*
+    replace: ' '
+  # Collapse multiple spaces/tabs
+  - pattern: '[ \t]{2,}'
+    replace: ' '
+  # Strip common footers/watermarks/page headers
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  # Normalize quotes/dashes
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  # Remove stray single-letter lines
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  # Reduce mid-sentence hard wraps (keep blank-line paragraph breaks)
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: (?:\f|\x0c)
+    flags: MULTILINE
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    flags: MULTILINE
+
+headers:
+  # Numeric/outline (1, 1.1, 2.3.4 Title)
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  # ALL-CAPS section headings (min length prevents false positives)
+  - pattern: (?m)^[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  # Title Case (up to 7 tokens)
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  # Bulleted headings
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  CHIEF COMPLAINT: chief_complaint
+  CC: chief_complaint
+  HISTORY OF PRESENT ILLNESS: hpi
+  HPI: hpi
+  REVIEW OF SYSTEMS: ros
+  ROS: ros
+  PHYSICAL EXAMINATION: physical_exam
+  PHYSICAL EXAM: physical_exam
+  PE: physical_exam
+  ASSESSMENT AND PLAN: assessment_plan
+  A&P: assessment_plan
+  ASSESSMENT: assessment_plan
+  PLAN: assessment_plan
+  MEDICATIONS: medications
+  MEDS: medications
+  ALLERGIES: allergies
+  VITAL SIGNS: vitals
+  VS: vitals
+  LAB RESULTS: lab_results
+  LABS: lab_results
+  DIAGNOSIS: diagnosis
+  DIAGNOSES: diagnosis
+  TREATMENT PLAN: treatment_plan
+  PROGRESS NOTE: progress_note
+  DISCHARGE SUMMARY: discharge_summary
+  ADMISSION NOTE: admission_note
+  CLINICAL NOTE: clinical_note
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(patient|caregiver|patient information|for patients)\b
+    audience: patient
+  - pattern: (?i)\b(physician|prescriber|hcp|healthcare provider|clinical|medical professional)\b
+    audience: hcp
+  - pattern: (?i)\b(clinical|pharmacology|diagnosis|treatment|medication|dosage|contraindications|warnings)\b
+    audience: hcp
+
+chunking:
+  strategy: sentence
+  max_tokens: 1200
+  overlap_sentences: 2
+  hard_overlap_chars: 300
+
+quality_gates:
+  min_sections: 5
+  max_mid_sentence_boundary_rate: 0.2
+

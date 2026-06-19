@@ -1,0 +1,59 @@
+# Python Version Compatibility: Supports Python 3.11 and 3.12
+# Tested on: Python 3.11 (deploy) and Python 3.12 (local dev)
+
+# Web Framework
+fastapi==0.104.1  # Compatible with Python 3.11 and 3.12
+uvicorn[standard]==0.24.0  # Compatible with Python 3.11 and 3.12
+python-multipart==0.0.6
+
+# Data Validation & Settings
+pydantic>=2.0.0,<3.0.0  # Compatible with Python 3.11 and 3.12 (required by pydantic-settings)
+pydantic-settings>=2.0.0,<3.0.0  # Compatible with Python 3.11 and 3.12
+email-validator>=2.0.0
+dnspython>=2.4.0  # For DNS/MX record validation
+
+# Database
+SQLAlchemy==2.0.23  # Compatible with Python 3.11 and 3.12
+alembic==1.12.1  # Compatible with Python 3.11 and 3.12
+psycopg2-binary==2.9.9  # Compatible with Python 3.11 and 3.12
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0  # Compatible with Python 3.11 and 3.12
+PyJWT>=2.8.0,<3.0.0  # For JWT token encoding/decoding (used in security.py and jwt_keys.py)
+cryptography==41.0.7  # Compatible with Python 3.11 and 3.12
+passlib[bcrypt]==1.7.4  # Compatible with Python 3.11 and 3.12
+bcrypt<4.0.0,>=3.2.0  # Compatible with Python 3.11 and 3.12
+
+# HTTP Clients
+httpx==0.25.2  # Compatible with Python 3.11 and 3.12
+
+# Vector Database
+qdrant-client==1.16.2  # Compatible with Qdrant server v1.16.2
+
+# Storage (Object Storage)
+minio==7.2.0  # Compatible with Python 3.11 and 3.12
+boto3==1.34.0  # Compatible with Python 3.11 and 3.12
+azure-storage-blob>=12.19.0,<13.0.0  # Compatible with Python 3.11 and 3.12
+google-cloud-storage>=2.10.0,<3.0.0  # Compatible with Python 3.11 and 3.12
+google-api-python-client>=2.100.0,<3.0.0  # Compatible with Python 3.11 and 3.12
+google-auth>=2.23.0,<3.0.0  # Compatible with Python 3.11 and 3.12
+google-auth-oauthlib>=1.1.0,<2.0.0  # Compatible with Python 3.11 and 3.12
+
+# ML & AI
+sentence-transformers>=2.7.0,<3.0.0  # Modern version compatible with latest huggingface_hub
+openai>=1.0.0,<2.0.0  # Compatible with Python 3.11 and 3.12
+
+# Data Processing
+pandas>=2.0.0,<3.0.0  # Compatible with Python 3.11 and 3.12
+regex>=2023.0.0,<2024.0.0  # Compatible with Python 3.11 and 3.12
+numpy<2.0.0,>=1.24.0  # Compatible with Python 3.11 and 3.12 (explicit upper bound for compatibility)
+matplotlib>=3.7.0,<4.0.0  # For PDF report generation (AI Trust Report visualization)
+
+# Utilities
+tenacity==8.2.3  # Compatible with Python 3.11 and 3.12
+loguru==0.7.2  # Compatible with Python 3.11 and 3.12
+pypdf==3.17.4  # Compatible with Python 3.11 and 3.12
+packaging>=23.0,<25.0  # For version parsing and compatibility checks
+
+# Payment Processing
+stripe>=5.0.0,<6.0.0  # Compatible with Python 3.11 and 3.12

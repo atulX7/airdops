@@ -1,0 +1,203 @@
+id: REGULATORY
+description: FDA/EMA labels (USPI/PI/SmPC) with formal sectioning and tables
+
+probes:
+  must_match:
+    - (?mi)^\s*HIGHLIGHTS OF PRESCRIBING INFORMATION\s*$
+    - (?mi)^\s*FULL PRESCRIBING INFORMATION\s*$
+  nice_to_have:
+    - (?mi)\b(NDA|ANDA|BLA)\s*\d{3,}\b
+    - (?mi)^\s*DOSAGE(?:\s+AND)?\s+ADMINISTRATION\s*$
+    - (?mi)^\s*WARNINGS(?:\s+AND)?\s+PRECAUTIONS\s*$
+    - (?mi)^\s*ADVERSE REACTIONS\s*$
+  must_match_flags: MULTILINE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  # Soft hyphen
+  - pattern: \u00AD
+    replace: ''
+  # Fix hyphenation across line breaks: "exam-\nple" -> "example"
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: \1\2
+  # Join lowercase-leading continuation lines
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  # Remove leading pipes and normalize inline pipes
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  - pattern: \s*\|\s*
+    replace: ' '
+  # Collapse multiple spaces/tabs
+  - pattern: '[ \t]{2,}'
+    replace: ' '
+  # Strip common footers/watermarks/page headers
+  - pattern: (?mi)^\s*(?:This label may not be the latest approved by FDA\.|OceanofPDF\.com.*)$
+    replace: ''
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  # Normalize quotes/dashes
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  # Remove stray single-letter lines
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  # Reduce mid-sentence hard wraps
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: ^(?:\f|\x0c)$
+    flags: MULTILINE
+
+headers:
+  # Numeric/outline (1, 1.1, 2.3.4 Title)
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  # ALL-CAPS section headings (min length prevents false positives)
+  - pattern: (?m)^[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  # Title Case (up to 7 tokens)
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  # Bulleted headings
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  HIGHLIGHTS OF PRESCRIBING INFORMATION: highlights
+  FULL PRESCRIBING INFORMATION: full_pi
+  BOXED WARNING: boxed_warning
+  INDICATIONS AND USAGE: indications
+  DOSAGE AND ADMINISTRATION: dosage
+  DOSAGE FORMS AND STRENGTHS: dosage_forms
+  CONTRAINDICATIONS: contraindications
+  WARNINGS AND PRECAUTIONS: warnings
+  ADVERSE REACTIONS: adverse_reactions
+  DRUG INTERACTIONS: interactions
+  USE IN SPECIFIC POPULATIONS: use_in_populations
+  OVERDOSAGE: overdosage
+  DESCRIPTION: description
+  CLINICAL PHARMACOLOGY: clinical_pharmacology
+  NONCLINICAL TOXICOLOGY: nonclinical_toxicology
+  CLINICAL STUDIES: clinical_studies
+  HOW SUPPLIED/STORAGE AND HANDLING: supply_storage
+  PATIENT COUNSELING INFORMATION: patient_counseling
+  MEDICATION GUIDE: medication_guide
+  REFERENCES: references
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(patient counseling|medication guide|for patients|patient information)\b
+    audience: patient
+  - pattern: (?i)\b(clinical|pharmacology|contraindications|warnings|dosage|adverse reactions|indications|interactions|nonclinical|toxicology|clinical studies)\b
+    audience: hcp
+
+chunking:
+  strategy: sentence
+  max_tokens: 900
+  overlap_sentences: 2
+  hard_overlap_chars: 300
+
+quality_gates:
+  min_sections: 8
+  max_mid_sentence_boundary_rate: 0.4
+
+# Trust Score Configuration
+# Required sections for completeness metric
+required_sections:
+  - id: highlights
+    synonyms: ["HIGHLIGHTS OF PRESCRIBING INFORMATION", "Highlights"]
+    critical: true
+    min_chars: 100
+  - id: full_pi
+    synonyms: ["FULL PRESCRIBING INFORMATION", "Full Prescribing Information"]
+    critical: true
+    min_chars: 500
+  - id: indications
+    synonyms: ["INDICATIONS AND USAGE", "Indications"]
+    critical: true
+    min_chars: 50
+  - id: dosage
+    synonyms: ["DOSAGE AND ADMINISTRATION", "Dosage"]
+    critical: true
+    min_chars: 100
+  - id: warnings
+    synonyms: ["WARNINGS AND PRECAUTIONS", "Warnings"]
+    critical: true
+    min_chars: 100
+  - id: adverse_reactions
+    synonyms: ["ADVERSE REACTIONS", "Adverse Reactions"]
+    critical: true
+    min_chars: 50
+
+# Required fields for completeness metric
+required_fields:
+  - id: drug_name
+    critical: true
+    patterns:
+      - "(?i)\\b(?:drug name|active ingredient|generic name)\\b"
+    expected_section_ids: ["highlights", "full_pi"]
+  - id: indication_text
+    critical: true
+    patterns:
+      - "(?i)\\b(?:indication|indicated for|used to treat)\\b"
+    expected_section_ids: ["indications"]
+  - id: dosage_strength
+    critical: true
+    patterns:
+      - "(?i)\\b(?:\\d+\\s*(?:mg|g|ml|mcg|units?))\\b"
+    expected_section_ids: ["dosage", "dosage_forms"]
+
+# Completeness weights (sections vs fields)
+completeness_weights:
+  sections: 0.6
+  fields: 0.4
+
+# Validity rules (rule pass rate)
+validity_rules:
+  - type: pattern_match
+    field: drug_name
+    pattern: "(?i)\\b[a-z]+\\b"
+    description: "Drug name must contain alphabetic characters"
+  - type: required
+    field: indication_text
+    description: "Indication text must be present"
+  - type: pattern_match
+    field: dosage_strength
+    pattern: "(?i)\\b\\d+\\s*(?:mg|g|ml|mcg|units?)\\b"
+    description: "Dosage strength must contain numeric value with unit"
+
+# Consistency rules (severity-weighted pass rate)
+consistency_rules:
+  - type: value_match
+    field: drug_name
+    expected: null  # Will be extracted from first occurrence
+    severity: critical
+    description: "Drug name must be consistent across document"
+  - type: range_check
+    field: dosage_strength_numeric
+    min: 0.1
+    max: 10000.0
+    severity: high
+    description: "Dosage strength must be within reasonable range"
+  - type: pattern_match
+    field: date_format
+    pattern: "(?i)\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d{1,2}/\\d{1,2}/\\d{4}\\b"
+    severity: medium
+    description: "Date formats should be consistent"
+
+# Freshness SLA (hours) for timeliness metric
+freshness_sla_hours: 8760  # 365 days = 8760 hours
+
+
+
+

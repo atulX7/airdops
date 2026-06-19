@@ -1,0 +1,108 @@
+id: ACADEMIC
+description: Research papers, theses, academic content with citation preservation
+
+probes:
+  must_match:
+    - '(?i)\b(abstract|introduction|methodology|results|discussion|conclusion|references|research|study|analysis)\b'
+  nice_to_have:
+    - '(?i)\b(citation|bibliography|acknowledgments|appendix|hypothesis|findings|implications|literature review)\b'
+    - '(?i)\b(doi|arxiv|pubmed|journal|conference|proceedings)\b'
+  must_match_flags: IGNORECASE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  # Soft hyphen
+  - pattern: \u00AD
+    replace: ''
+  # Fix hyphenation across line breaks: "exam-\nple" -> "example"
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: \1\2
+  # Join lowercase-leading continuation lines
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  # Remove leading pipes and normalize inline pipes
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  - pattern: \s*\|\s*
+    replace: ' '
+  # Collapse multiple spaces/tabs
+  - pattern: '[ \t]{2,}'
+    replace: ' '
+  # Strip common footers/watermarks/page headers
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  # Normalize quotes/dashes
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  # Remove stray single-letter lines
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  # Reduce mid-sentence hard wraps (keep blank-line paragraph breaks)
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: (?:\f|\x0c)
+    flags: MULTILINE
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    flags: MULTILINE
+
+headers:
+  # Numeric/outline (1, 1.1, 2.3.4 Title)
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  # ALL-CAPS section headings (min length prevents false positives)
+  - pattern: (?m)^[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  # Title Case (up to 7 tokens)
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  # Bulleted headings
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  ABSTRACT: abstract
+  INTRODUCTION: introduction
+  LITERATURE REVIEW: literature_review
+  METHODOLOGY: methodology
+  METHODS: methodology
+  RESULTS: results
+  FINDINGS: results
+  DISCUSSION: discussion
+  CONCLUSION: conclusion
+  CONCLUSIONS: conclusion
+  REFERENCES: references
+  BIBLIOGRAPHY: references
+  ACKNOWLEDGMENTS: acknowledgments
+  ACKNOWLEDGEMENTS: acknowledgments
+  APPENDIX: appendix
+  APPENDICES: appendix
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(researcher|academic|scholar|professor|student|graduate|phd)\b
+    audience: academic
+  - pattern: (?i)\b(methodology|methods|experimental design|data collection|analysis)\b
+    audience: academic
+  - pattern: (?i)\b(abstract|introduction|conclusion|references|citation)\b
+    audience: academic
+
+chunking:
+  strategy: sentence
+  max_tokens: 1000
+  overlap_sentences: 2
+  hard_overlap_chars: 250
+
+quality_gates:
+  min_sections: 7
+  max_mid_sentence_boundary_rate: 0.2
+

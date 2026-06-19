@@ -1,0 +1,45 @@
+=== PAGE 1 ===
+
+# Introduction
+
+This is a sample document for testing AI readiness features in PrimeData.
+It contains multiple sections and should be processed correctly by the AIRD pipeline.
+
+The document includes:
+- Introduction section
+- Methodology section
+- Results section
+- Conclusion section
+
+=== PAGE 2 ===
+
+# Methodology
+
+The methodology section describes the approach used for data collection and analysis.
+It includes details about:
+- Data sources
+- Collection methods
+- Analysis techniques
+- Quality assurance
+
+=== PAGE 3 ===
+
+# Results
+
+The results show significant improvements in AI readiness metrics.
+Trust scores are calculated based on multiple factors including:
+- Completeness
+- Accuracy
+- Security
+- Metadata presence
+
+=== PAGE 4 ===
+
+# Conclusion
+
+This document demonstrates the complete AIRD pipeline functionality.
+All stages should process correctly and generate appropriate metrics and artifacts.
+
+
+
+

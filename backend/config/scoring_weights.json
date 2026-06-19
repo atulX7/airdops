@@ -1,0 +1,35 @@
+{
+  "completeness": 0.10,
+  "validity": 0.08,
+  "consistency": 0.08,
+  "uniqueness": 0.08,
+  "timeliness": 0.05,
+  "text_integrity": 0.10,
+  "parse_success": 0.05,
+  "chunk_boundary_quality": 0.05,
+  "chunk_coherence": 0.10,
+  "chunk_size_health": 0.08,
+  "metadata_completeness": 0.10,
+  "provenance_coverage": 0.13,
+  "Quality": 0.0,
+  "Context_Quality": 0.0,
+  "Completeness": 0.0,
+  "Metadata_Presence": 0.0,
+  "Chunk_Coherence": 0.0,
+  "Noise_Free_Score": 0.0,
+  "Duplicate_Ratio": 0.0,
+  "Chunk_Size_Health": 0.0,
+  "Chunk_Boundary_Quality": 0.0,
+  "Timeliness": 0.0,
+  "Parse_Success": 0.0,
+  "Token_Count": 0.0,
+  "Diversity": 0.0,
+  "KnowledgeBase_Ready": 0.0,
+  "Audience_Accessibility": 0.0,
+  "Audience_Intentionality": 0.0,
+  "GPT_Confidence": 0.0
+}
+
+
+
+

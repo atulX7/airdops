@@ -1,0 +1,109 @@
+id: FINANCIAL
+description: Financial reports, statements, compliance documents with table preservation
+
+probes:
+  must_match:
+    - '(?i)\b(revenue|expenses|assets|liabilities|balance sheet|income statement|cash flow|quarterly|annual|sec|sox|financial statements)\b'
+  nice_to_have:
+    - '(?i)\b(consolidated|earnings|profit|loss|ebitda|net income|total assets|shareholders equity)\b'
+    - '(?i)\b(10-k|10-q|8-k|form 10|sec filing|annual report|quarterly report)\b'
+  must_match_flags: IGNORECASE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  # Soft hyphen
+  - pattern: \u00AD
+    replace: ''
+  # Fix hyphenation across line breaks: "exam-\nple" -> "example"
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: \1\2
+  # Join lowercase-leading continuation lines
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  # Preserve table structures (be careful with pipes)
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  # Collapse multiple spaces/tabs (but preserve table alignment)
+  - pattern: '[ \t]{3,}'
+    replace: '  '
+  # Strip common footers/watermarks/page headers
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  # Normalize quotes/dashes
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  # Remove stray single-letter lines
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  # Reduce mid-sentence hard wraps (keep blank-line paragraph breaks)
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: (?:\f|\x0c)
+    flags: MULTILINE
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    flags: MULTILINE
+
+headers:
+  # Numeric/outline (1, 1.1, 2.3.4 Title)
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  # ALL-CAPS section headings (min length prevents false positives)
+  - pattern: (?m)^[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  # Title Case (up to 7 tokens)
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  # Bulleted headings
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  FINANCIAL HIGHLIGHTS: financial_highlights
+  CONSOLIDATED STATEMENTS OF OPERATIONS: financial_statements
+  CONSOLIDATED STATEMENTS OF INCOME: financial_statements
+  CONSOLIDATED BALANCE SHEETS: balance_sheet
+  CONSOLIDATED STATEMENTS OF CASH FLOWS: cash_flow
+  MANAGEMENT'S DISCUSSION AND ANALYSIS: mgmt_discussion
+  MD&A: mgmt_discussion
+  RISK FACTORS: risk_factors
+  QUARTERLY RESULTS: quarterly_results
+  ANNUAL RESULTS: annual_results
+  BALANCE SHEET: balance_sheet
+  INCOME STATEMENT: income_statement
+  CASH FLOW: cash_flow
+  NOTES TO FINANCIAL STATEMENTS: notes
+  REVENUE: revenue
+  EXPENSES: expenses
+  ASSETS: assets
+  LIABILITIES: liabilities
+  EQUITY: equity
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(executive|management|ceo|cfo|board|investor|shareholder)\b
+    audience: exec
+  - pattern: (?i)\b(financial|accounting|audit|compliance|sox|sec|regulatory)\b
+    audience: finance
+  - pattern: (?i)\b(revenue|expenses|assets|liabilities|balance sheet|income statement|cash flow)\b
+    audience: finance
+
+chunking:
+  strategy: sentence
+  max_tokens: 1500
+  overlap_sentences: 2
+  hard_overlap_chars: 350
+
+quality_gates:
+  min_sections: 6
+  max_mid_sentence_boundary_rate: 0.25
+

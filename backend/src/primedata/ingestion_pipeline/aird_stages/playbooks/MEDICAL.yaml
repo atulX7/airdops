@@ -1,0 +1,94 @@
+id: MEDICAL
+description: Medical research papers, WHO/clinical guidelines, epidemiology, treatment — any therapeutic area; section-aware chunking for RAG
+
+probes:
+  must_match:
+    - '(?i)\b(who|world health organization|epidemiology|prevalence|incidence|morbidity|mortality|diagnosis|treatment|therapy|guideline|health system|prevention|screening|complications|clinical trial|systematic review|meta-analysis)\b'
+  nice_to_have:
+    - '(?i)\b(clinical|patient|medication|pharmaceutical|drug|efficacy|safety|adverse event|biomarker|etiology|prognosis)\b'
+    - '(?i)\b(cohort study|randomized controlled|therapeutic|intervention|vaccine|pathology|oncology|cardiology|neurology)\b'
+    - '(?i)\b(comorbidity|disorder|syndrome|diagnostic|prognostic)\b'
+  must_match_flags: IGNORECASE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  - pattern: \u00AD
+    replace: ''
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: '\1\2'
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  - pattern: \s*\|\s*
+    replace: ' '
+  - pattern: '[ \t]{2,}'
+    replace: ' '
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: (?:\f|\x0c)
+    flags: MULTILINE
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    flags: MULTILINE
+
+headers:
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  - pattern: (?m)^[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  INTRODUCTION: introduction
+  EXECUTIVE SUMMARY: executive_summary
+  EPIDEMIOLOGY: epidemiology
+  PREVALENCE: prevalence
+  INCIDENCE: incidence
+  DIAGNOSIS: diagnosis
+  TREATMENT: treatment
+  SCREENING: screening
+  COMPLICATIONS: complications
+  PREVENTION: prevention
+  GUIDELINES: guidelines
+  RECOMMENDATIONS: recommendations
+  REFERENCES: references
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(patient|caregiver|for patients)\b
+    audience: patient
+  - pattern: (?i)\b(physician|clinician|hcp|healthcare provider|clinical)\b
+    audience: hcp
+  - pattern: (?i)\b(epidemiology|prevalence|guideline|health system)\b
+    audience: policy
+
+# RAG-optimized: 700–900 tokens, overlap 140–180, semantic, section-aware
+chunking:
+  content_type: medical
+  strategy: sentence
+  max_tokens: 800
+  overlap_sentences: 2
+  hard_overlap_chars: 640
+
+quality_gates:
+  min_sections: 3
+  max_mid_sentence_boundary_rate: 0.25

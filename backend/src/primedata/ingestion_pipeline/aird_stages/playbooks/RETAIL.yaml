@@ -1,0 +1,114 @@
+id: RETAIL
+description: Retail operations, inventory, sales data, and customer-facing content
+
+probes:
+  must_match:
+    - '(?i)\b(retail|store|inventory|stock|sales|merchandise|shelf|display|point of sale|pos|checkout)\b'
+  nice_to_have:
+    - '(?i)\b(retail store|store location|store hours|opening hours|closing hours|store manager)\b'
+    - '(?i)\b(inventory management|stock levels|reorder point|safety stock|warehouse)\b'
+    - '(?i)\b(sales associate|customer service|returns|refunds|exchange policy)\b'
+    - '(?i)\b(promotion|campaign|discount|sale|clearance|markdown)\b'
+  must_match_flags: IGNORECASE
+  nice_to_have_flags: MULTILINE
+
+pre_normalizers:
+  # Soft hyphen
+  - pattern: \u00AD
+    replace: ''
+  # Fix hyphenation across line breaks: "exam-\nple" -> "example"
+  - pattern: (?m)([A-Za-z])-[ \t]*\r?\n[ \t]*([A-Za-z])
+    replace: \1\2
+  # Join lowercase-leading continuation lines
+  - pattern: (?m)\r?\n(?=[a-z])
+    replace: ' '
+  # Remove leading pipes and normalize inline pipes
+  - pattern: ^(?:\s*\|\s*)+
+    replace: ''
+    flags: MULTILINE
+  - pattern: \s*\|\s*
+    replace: ' '
+  # Collapse multiple spaces/tabs
+  - pattern: '[ \t]{2,}'
+    replace: ' '
+  # Strip common footers/watermarks/page headers
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    replace: ''
+  # Normalize quotes/dashes
+  - pattern: [\u2018\u2019]
+    replace: "'"
+  - pattern: [\u201C\u201D]
+    replace: '"'
+  - pattern: [\u2013\u2014]
+    replace: '-'
+  # Remove stray single-letter lines
+  - pattern: (?m)^\s*[A-Za-z]\s*$
+    replace: ''
+  # Reduce mid-sentence hard wraps (keep blank-line paragraph breaks)
+  - pattern: (?m)(?<![.!?])\r?\n(?!\r?\n)
+    replace: ' '
+
+page_fences:
+  - pattern: ^[ \t\|]*=== PAGE \d+ ===[ \t\|]*$
+    flags: MULTILINE
+  - pattern: (?:\f|\x0c)
+    flags: MULTILINE
+  - pattern: (?mi)^\s*Page\s+\d+\s+of\s+\d+\s*$
+    flags: MULTILINE
+
+headers:
+  # Numeric/outline (1, 1.1, 2.3.4 Title)
+  - pattern: (?m)^(?:[0-9]+(?:\.[0-9]+)*)\s+[^\s].+$
+    flags: MULTILINE
+  # ALL-CAPS section headings (min length prevents false positives)
+  - pattern: (?m)^[A-Z][A-Z0-9 &'\-/,:()]{6,}$
+    flags: MULTILINE
+  # Title Case (up to 7 tokens)
+  - pattern: (?m)^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}$
+    flags: MULTILINE
+  # Bulleted headings
+  - pattern: (?m)^(?:[-*•]\s+)[A-Z][^\n]{5,}$
+    flags: MULTILINE
+
+section_aliases:
+  STORE OPERATIONS: store_operations
+  INVENTORY MANAGEMENT: inventory
+  STOCK MANAGEMENT: inventory
+  SALES PROCEDURES: sales_procedures
+  CUSTOMER SERVICE: customer_service
+  RETURN POLICY: return_policy
+  EXCHANGE POLICY: exchange_policy
+  PRICING: pricing
+  PROMOTIONS: promotions
+  MERCHANDISING: merchandising
+  DISPLAY GUIDELINES: display_guidelines
+  SHELF MANAGEMENT: shelf_management
+  STORE LAYOUT: store_layout
+  OPENING PROCEDURES: opening_procedures
+  CLOSING PROCEDURES: closing_procedures
+  CASH HANDLING: cash_handling
+  POINT OF SALE: pos
+  Introduction: introduction
+  Overview: overview
+
+audience_rules:
+  - pattern: (?i)\b(customer|shopper|buyer|guest|client)\b
+    audience: customer
+  - pattern: (?i)\b(store manager|assistant manager|supervisor|team lead)\b
+    audience: management
+  - pattern: (?i)\b(sales associate|cashier|clerk|staff|employee)\b
+    audience: staff
+  - pattern: (?i)\b(inventory|warehouse|stock|supply chain|logistics)\b
+    audience: ops
+  - pattern: (?i)\b(marketing|promotion|campaign|advertising)\b
+    audience: marketing
+
+chunking:
+  strategy: fixed_size
+  max_tokens: 900
+  overlap_sentences: 1
+  hard_overlap_chars: 200
+
+quality_gates:
+  min_sections: 4
+  max_mid_sentence_boundary_rate: 0.3
